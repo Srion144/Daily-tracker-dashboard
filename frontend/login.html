@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Daily Tracker — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="login.css"/>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <h1>Daily<span>Tracker</span></h1>
+      <p class="subtitle">Sign in to your account</p>
+
+      <div id="error-msg" class="error-msg" style="display:none"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="you@example.com" required/>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••" required/>
+        </div>
+        <button type="submit" id="submit-btn">Sign In</button>
+      </form>
+
+      <p class="toggle-link">
+        Don't have an account? <a href="#" id="toggle-link">Create one</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    let isLogin = true;
+
+    document.getElementById('toggle-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      isLogin = !isLogin;
+      document.querySelector('.subtitle').textContent = isLogin ? 'Sign in to your account' : 'Create a new account';
+      document.getElementById('submit-btn').textContent = isLogin ? 'Sign In' : 'Create Account';
+      document.getElementById('toggle-link').textContent = isLogin ? 'Create one' : 'Sign in instead';
+      document.querySelector('.toggle-link').firstChild.textContent = isLogin
+        ? "Don't have an account? " : "Already have an account? ";
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('submit-btn');
+      const errDiv = document.getElementById('error-msg');
+
+      btn.textContent = 'Please wait...';
+      btn.disabled = true;
+      errDiv.style.display = 'none';
+
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errDiv.textContent = data.message;
+          errDiv.style.display = 'block';
+          btn.textContent = isLogin ? 'Sign In' : 'Create Account';
+          btn.disabled = false;
+          return;
+        }
+
+        // Save token and redirect
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userEmail', data.email);
+        // Small delay ensures localStorage is written before the new page reads it
+        setTimeout(() => { window.location.href = '/'; }, 50);
+
+      } catch {
+        errDiv.textContent = 'Connection error. Is the server running?';
+        errDiv.style.display = 'block';
+        btn.textContent = isLogin ? 'Sign In' : 'Create Account';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

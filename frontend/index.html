@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="Daily Tracker Dashboard — track tasks, water, exercise, mood and more"/>
+<meta name="theme-color" content="#0d0f14"/>
+<title>Daily Tracker Dashboard</title>
+<link rel="manifest" href="manifest.json"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="main.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</head>
+<body>
+
+<!-- MOBILE HAMBURGER -->
+<button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+<div class="overlay-mask" id="overlay-mask" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+  <div class="sidebar-header">
+    <div class="logo">
+      <h1>Daily<span>Tracker</span></h1>
+      <p id="sidebar-date"></p>
+    </div>
+    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+  </div>
+
+  <nav class="nav">
+    <span class="nav-label">Dashboard</span>
+    <button class="nav-item active" onclick="showPage('overview',this)">
+      <span class="nav-icon">⊞</span> Overview
+    </button>
+
+    <span class="nav-label">Trackers</span>
+    <button class="nav-item" onclick="showPage('tasks',this)">
+      <span class="nav-icon">✓</span> Tasks
+    </button>
+    <button class="nav-item" onclick="showPage('water',this)">
+      <span class="nav-icon">💧</span> Water
+    </button>
+    <button class="nav-item" onclick="showPage('exercise',this)">
+      <span class="nav-icon">⚡</span> Exercise
+    </button>
+    <button class="nav-item" onclick="showPage('mood',this)">
+      <span class="nav-icon">☺</span> Mood
+    </button>
+
+    <span class="nav-label">Tools</span>
+    <button class="nav-item" onclick="showPage('focus',this)">
+      <span class="nav-icon">⏱</span> Focus Timer
+    </button>
+    <button class="nav-item" onclick="showPage('goals',this)">
+      <span class="nav-icon">◎</span> Goals
+    </button>
+    <button class="nav-item" onclick="showPage('calendar',this)">
+      <span class="nav-icon">▦</span> Calendar
+    </button>
+    <button class="nav-item" onclick="showPage('progress',this)">
+      <span class="nav-icon">↗</span> Progress
+    </button>
+    <button class="nav-item" onclick="showPage('settings',this)">
+      <span class="nav-icon">⚙</span> Settings
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="export-btn" onclick="exportData()">⬇ Export Backup</button>
+    <button class="export-btn" style="margin-top:8px;background:#c0392b;border-color:#c0392b" onclick="logout()">⏻ Logout</button>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main" id="main">
+
+  <!-- =================== OVERVIEW =================== -->
+  <div class="page active" id="page-overview" role="main">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2 id="greeting">Good Morning! 👋</h2>
+        <p id="overview-date"></p>
+      </div>
+    </div>
+
+    <div class="overview-top">
+      <div class="stat-card green">
+        <div class="stat-label">Tasks Done</div>
+        <div class="stat-val" id="ov-tasks">0/0</div>
+        <div class="stat-sub" id="ov-task-pct">0% complete</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">Water</div>
+        <div class="stat-val" id="ov-water">0</div>
+        <div class="stat-sub">glasses today</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">Streak</div>
+        <div class="stat-val" id="ov-streak">0</div>
+        <div class="stat-sub">days 🔥</div>
+      </div>
+      <div class="stat-card pink">
+        <div class="stat-label">Exercise</div>
+        <div class="stat-val" id="ov-exercise">0</div>
+        <div class="stat-sub">min today</div>
+      </div>
+    </div>
+
+    <div class="section-row">
+      <div class="card">
+        <h3>Today's Progress</h3>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Tasks</span><span id="ov-task-bar-pct">0%</span></div>
+          <div class="progress-track" style="height:8px"><div class="progress-fill fill-green" id="ov-task-bar" style="width:0%"></div></div>
+        </div>
+        <div class="progress-wrap" style="margin-top:10px">
+          <div class="progress-label"><span>Water</span><span id="ov-water-bar-pct">0%</span></div>
+          <div class="progress-track" style="height:8px"><div class="progress-fill fill-blue" id="ov-water-bar" style="width:0%"></div></div>
+        </div>
+        <div class="progress-wrap" style="margin-top:10px">
+          <div class="progress-label"><span>Exercise</span><span id="ov-ex-bar-pct">0%</span></div>
+          <div class="progress-track" style="height:8px"><div class="progress-fill fill-amber" id="ov-ex-bar" style="width:0%"></div></div>
+        </div>
+        <div class="chart-wrap-sm" style="margin-top:16px">
+          <canvas id="weeklyBarChart" role="img" aria-label="Weekly task completion">Weekly completion chart</canvas>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card card-sm">
+          <h3>Today's Mood</h3>
+          <div style="text-align:center;padding:8px 0">
+            <div id="ov-mood-emoji" style="font-size:40px">—</div>
+            <div id="ov-mood-label" style="color:var(--text2);font-size:13px;margin-top:4px">Not set</div>
+          </div>
+        </div>
+        <div class="card card-sm">
+          <h3>🔥 Streak</h3>
+          <div class="streak-num" id="ov-streak-big">0</div>
+          <div style="text-align:center;color:var(--text3);font-size:12px">consecutive days</div>
+          <div style="text-align:center;color:var(--text3);font-size:11px;margin-top:4px">Best: <span id="ov-longest-streak" style="color:var(--amber);font-weight:700">0</span> days</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Today's Tasks</h3>
+      <div class="task-list" id="ov-task-list" aria-label="Today's tasks"></div>
+    </div>
+  </div>
+
+  <!-- =================== TASKS =================== -->
+  <div class="page" id="page-tasks">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>Task Management</h2>
+        <p>Add, edit, complete and organise tasks — by date, priority, and category</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Add New Task</h3>
+      <div class="input-row">
+        <input class="inp" id="task-input" placeholder="What needs to be done?" style="flex:2;min-width:160px" onkeydown="if(event.key==='Enter')addTask()"/>
+        <select class="inp" id="task-priority">
+          <option value="high">🔴 High</option>
+          <option value="medium" selected>🟡 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
+        <select class="inp" id="task-category">
+          <option value="study">📚 Study</option>
+          <option value="health">💪 Health</option>
+          <option value="personal">🏠 Personal</option>
+          <option value="coding">💻 Coding</option>
+        </select>
+        <input type="date" class="inp" id="task-due" title="Due date (optional)"/>
+        <button class="btn" onclick="addTask()">+ Add</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer">
+          <input type="checkbox" id="task-recurring" onchange="toggleRecurringOptions()" style="cursor:pointer"/>
+          Recurring task
+        </label>
+        <div id="recurring-options" style="display:none;gap:8px;align-items:center">
+          <select class="inp" id="task-recurring-days" style="padding:6px 10px;font-size:12px">
+            <option value="daily">Every day</option>
+            <option value="weekdays">Weekdays only</option>
+            <option value="weekends">Weekends only</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-row">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <h3 style="margin:0">Tasks</h3>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <input type="date" class="inp" id="filter-date" style="padding:5px 10px;font-size:12px" onchange="renderTasks()"/>
+            <select class="inp" style="padding:5px 10px;font-size:12px" id="filter-category" onchange="renderTasks()">
+              <option value="">All Categories</option>
+              <option value="study">Study</option>
+              <option value="health">Health</option>
+              <option value="personal">Personal</option>
+              <option value="coding">Coding</option>
+            </select>
+            <select class="inp" style="padding:5px 10px;font-size:12px" id="filter-priority" onchange="renderTasks()">
+              <option value="">All Priority</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+            <select class="inp" style="padding:5px 10px;font-size:12px" id="filter-status" onchange="renderTasks()">
+              <option value="">All Status</option>
+              <option value="done">Done</option>
+              <option value="pending">Pending</option>
+            </select>
+          </div>
+        </div>
+        <div class="task-list" id="task-list" aria-live="polite"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card card-sm">
+          <h3>Completion Today</h3>
+          <div id="task-pct-big" style="font-family:var(--font);font-size:36px;font-weight:800;color:var(--green)">0%</div>
+          <div class="progress-track" style="height:10px;margin-top:8px"><div class="progress-fill fill-green" id="task-pct-bar" style="width:0%"></div></div>
+          <div style="font-size:12px;color:var(--text3);margin-top:6px" id="task-pct-label">0 of 0 tasks done</div>
+        </div>
+        <div class="card card-sm">
+          <h3>By Category</h3>
+          <div id="cat-breakdown" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== WATER =================== -->
+  <div class="page" id="page-water">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>💧 Water Tracker</h2>
+        <p>Stay hydrated — your global goal applies to every day</p>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Daily Intake</h3>
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
+          <div>
+            <div style="font-family:var(--font);font-size:56px;font-weight:800;color:var(--blue);line-height:1" id="water-count">0</div>
+            <div style="color:var(--text3);font-size:13px">of <span id="water-goal-disp">8</span> glasses</div>
+          </div>
+          <div style="flex:1">
+            <div class="progress-track" style="height:12px"><div class="progress-fill fill-blue" id="water-bar" style="width:0%"></div></div>
+            <div style="font-size:12px;color:var(--text3);margin-top:5px" id="water-pct-label">0%</div>
+          </div>
+        </div>
+        <h3>Click to log</h3>
+        <div class="water-glasses" id="water-glasses" aria-label="Water glasses tracker"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn" onclick="addGlass()">+ Glass</button>
+          <button class="btn btn-ghost" onclick="removeGlass()">− Remove</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Daily Goal</h3>
+        <div class="form-group">
+          <label>Target (glasses per day)</label>
+          <input type="range" class="inp" id="water-goal-slider" min="4" max="20" value="8" oninput="updateWaterGoal(this.value)"/>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-top:4px">
+            <span>4</span><span id="water-goal-val" style="color:var(--blue);font-weight:700">8 glasses</span><span>20</span>
+          </div>
+        </div>
+        <div class="card" style="background:var(--bg3);margin:12px 0">
+          <div id="hydration-tip" style="font-size:13px;color:var(--text2);line-height:1.6">Log your first glass!</div>
+        </div>
+        <h3>This Week</h3>
+        <div class="chart-wrap"><canvas id="waterWeekChart" role="img" aria-label="Weekly water intake chart">Weekly water data</canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== EXERCISE =================== -->
+  <div class="page" id="page-exercise">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>⚡ Exercise Tracker</h2>
+        <p>Log daily activity — each session saved with type and time</p>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Log Exercise</h3>
+        <div class="exercise-grid" style="margin-bottom:14px">
+          <div class="ex-type" onclick="selectExType('walking',this)" data-type="walking"><span class="ex-icon">🚶</span>Walking</div>
+          <div class="ex-type" onclick="selectExType('running',this)" data-type="running"><span class="ex-icon">🏃</span>Running</div>
+          <div class="ex-type" onclick="selectExType('gym',this)" data-type="gym"><span class="ex-icon">🏋️</span>Gym</div>
+          <div class="ex-type" onclick="selectExType('yoga',this)" data-type="yoga"><span class="ex-icon">🧘</span>Yoga</div>
+          <div class="ex-type" onclick="selectExType('cycling',this)" data-type="cycling"><span class="ex-icon">🚴</span>Cycling</div>
+          <div class="ex-type" onclick="selectExType('swimming',this)" data-type="swimming"><span class="ex-icon">🏊</span>Swimming</div>
+        </div>
+        <div class="form-group">
+          <label>Duration (minutes)</label>
+          <input type="number" class="inp inp-full" id="ex-duration" placeholder="e.g. 30" min="1" max="300" onkeydown="if(event.key==='Enter')logExercise()"/>
+        </div>
+        <button class="btn" style="width:100%" onclick="logExercise()">Log Exercise</button>
+        <div style="margin-top:16px">
+          <div class="form-group">
+            <label>Daily Goal (minutes)</label>
+            <input type="range" id="ex-goal-slider" min="10" max="180" value="30" oninput="updateExGoal(this.value)"/>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-top:4px">
+              <span>10</span><span id="ex-goal-val" style="color:var(--amber);font-weight:700">30 min</span><span>180</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Today's Summary</h3>
+        <div style="text-align:center;padding:14px 0">
+          <div style="font-family:var(--font);font-size:56px;font-weight:800;color:var(--amber);line-height:1" id="ex-total">0</div>
+          <div style="color:var(--text3);font-size:13px">minutes total</div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Goal</span><span id="ex-goal-pct">0%</span></div>
+          <div class="progress-track" style="height:10px"><div class="progress-fill fill-amber" id="ex-bar" style="width:0%"></div></div>
+        </div>
+        <div id="ex-log" style="margin-top:14px;display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto"></div>
+        <h3 style="margin-top:16px">Weekly Exercise</h3>
+        <div class="chart-wrap"><canvas id="exWeekChart" role="img" aria-label="Weekly exercise chart">Weekly exercise data</canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== MOOD =================== -->
+  <div class="page" id="page-mood">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>☺ Mood Tracker</h2>
+        <p>Log how you feel each day — notes are saved per date</p>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>How are you feeling today?</h3>
+        <div class="mood-grid">
+          <div class="mood-btn" data-mood="happy" onclick="setMood('happy',this)"><span class="mood-emoji">😊</span><span class="mood-label">Happy</span></div>
+          <div class="mood-btn" data-mood="excited" onclick="setMood('excited',this)"><span class="mood-emoji">🤩</span><span class="mood-label">Excited</span></div>
+          <div class="mood-btn" data-mood="neutral" onclick="setMood('neutral',this)"><span class="mood-emoji">😐</span><span class="mood-label">Neutral</span></div>
+          <div class="mood-btn" data-mood="tired" onclick="setMood('tired',this)"><span class="mood-emoji">😴</span><span class="mood-label">Tired</span></div>
+          <div class="mood-btn" data-mood="sad" onclick="setMood('sad',this)"><span class="mood-emoji">😔</span><span class="mood-label">Sad</span></div>
+        </div>
+        <div class="card" style="background:var(--bg3);margin:14px 0">
+          <div id="mood-message" style="font-size:14px;color:var(--text2);text-align:center;padding:6px 0">Select your mood above!</div>
+        </div>
+        <div class="form-group">
+          <label>Mood Note (optional)</label>
+          <textarea class="inp inp-full" id="mood-note" placeholder="How's your day going..."></textarea>
+        </div>
+        <button class="btn" style="width:100%" onclick="saveMoodNote()">Save Note</button>
+      </div>
+      <div class="card">
+        <h3>7-Day History</h3>
+        <div id="mood-history" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:220px;overflow-y:auto"></div>
+        <h3>Mood Trend</h3>
+        <div class="chart-wrap"><canvas id="moodChart" role="img" aria-label="Weekly mood chart">Mood history</canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== FOCUS TIMER =================== -->
+  <div class="page" id="page-focus">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>⏱ Focus Timer</h2>
+        <p>Pomodoro technique — sessions persist in your daily stats</p>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card" style="text-align:center">
+        <div class="pomo-mode">
+          <button class="pomo-mode-btn active" onclick="setPomoMode('work',this)">Work</button>
+          <button class="pomo-mode-btn" onclick="setPomoMode('short',this)">Short Break</button>
+          <button class="pomo-mode-btn" onclick="setPomoMode('long',this)">Long Break</button>
+        </div>
+        <div class="pomo-circle">
+          <svg width="180" height="180" aria-hidden="true">
+            <circle cx="90" cy="90" r="84" fill="none" stroke="#ffffff0e" stroke-width="8"/>
+            <circle cx="90" cy="90" r="84" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round"
+              stroke-dasharray="527.8" stroke-dashoffset="0" id="pomo-progress" style="transition:stroke-dashoffset 0.9s linear"/>
+          </svg>
+          <div class="pomo-time" id="pomo-display">25:00</div>
+          <div class="pomo-label" id="pomo-mode-label">Work Session</div>
+        </div>
+        <div class="pomo-btns">
+          <button class="btn" onclick="startPomo()">▶ Start</button>
+          <button class="btn btn-ghost" onclick="pausePomo()">⏸ Pause</button>
+          <button class="btn btn-ghost" onclick="resetPomo()">↺ Reset</button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px">
+          <button class="btn btn-ghost btn-sm" id="notif-btn" onclick="toggleNotifications()">🔕 Off</button>
+          <span style="font-size:11px;color:var(--text3)">Sound alerts</span>
+        </div>
+        <div class="pomo-stats">
+          <div class="pomo-stat"><div class="pomo-stat-val" id="pomo-sessions" style="color:var(--accent)">0</div><div class="pomo-stat-lbl">Sessions today</div></div>
+          <div class="pomo-stat"><div class="pomo-stat-val" id="pomo-total-min" style="color:var(--green)">0</div><div class="pomo-stat-lbl">Min focused</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Timer Settings</h3>
+        <div class="form-group">
+          <label>Work Duration</label>
+          <input type="range" id="work-dur" min="5" max="90" value="25" oninput="updatePomoDur('work',this.value)"/>
+          <div style="text-align:right;font-size:12px;color:var(--accent);margin-top:2px" id="work-dur-val">25 min</div>
+        </div>
+        <div class="form-group">
+          <label>Short Break</label>
+          <input type="range" id="short-dur" min="1" max="20" value="5" oninput="updatePomoDur('short',this.value)"/>
+          <div style="text-align:right;font-size:12px;color:var(--green);margin-top:2px" id="short-dur-val">5 min</div>
+        </div>
+        <div class="form-group">
+          <label>Long Break</label>
+          <input type="range" id="long-dur" min="5" max="45" value="15" oninput="updatePomoDur('long',this.value)"/>
+          <div style="text-align:right;font-size:12px;color:var(--blue);margin-top:2px" id="long-dur-val">15 min</div>
+        </div>
+        <h3 style="margin-top:8px">Session Log</h3>
+        <div id="pomo-log" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:4px">
+          <p style="color:var(--text3);font-size:12px">No sessions yet</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== GOALS =================== -->
+  <div class="page" id="page-goals">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>◎ Goals</h2>
+        <p>Set weekly & monthly goals — update progress manually</p>
+      </div>
+      <button class="btn" onclick="openModal('goal-modal')">+ Add Goal</button>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>My Goals</h3>
+        <div id="goals-list"></div>
+      </div>
+      <div class="card">
+        <h3>Goals Chart</h3>
+        <div class="chart-wrap-lg"><canvas id="goalsChart" role="img" aria-label="Goals progress chart">Goals data</canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== CALENDAR =================== -->
+  <div class="page" id="page-calendar">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>▦ Calendar</h2>
+        <p>Monthly view — shows per-day task completion, water, mood and notes</p>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="margin:0" id="cal-month-label"></h3>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="prevMonth()">← Prev</button>
+            <button class="btn btn-ghost btn-sm" onclick="nextMonth()">Next →</button>
+          </div>
+        </div>
+        <div class="calendar-grid">
+          <div class="cal-header">Sun</div><div class="cal-header">Mon</div>
+          <div class="cal-header">Tue</div><div class="cal-header">Wed</div>
+          <div class="cal-header">Thu</div><div class="cal-header">Fri</div>
+          <div class="cal-header">Sat</div>
+        </div>
+        <div class="calendar-grid" id="cal-grid" role="grid" aria-label="Calendar"></div>
+        <div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div style="width:12px;height:12px;border-radius:3px;background:#22d07a25"></div>All done</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div style="width:12px;height:12px;border-radius:3px;background:#f59e0b20"></div>Partial</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div style="width:12px;height:12px;border-radius:3px;background:var(--bg3)"></div>No tasks</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Day Details</h3>
+        <div id="cal-day-detail" style="color:var(--text3);font-size:13px">Click a day to see details, view tasks, and add notes.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== PROGRESS =================== -->
+  <div class="page" id="page-progress">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>↗ Progress & Analytics</h2>
+        <p>All charts show real per-day historical data</p>
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:16px">
+      <div class="card">
+        <h3>Weekly Task Completion (%)</h3>
+        <div class="chart-wrap-lg"><canvas id="progTaskBar" role="img" aria-label="Weekly completion bar chart">Task completion</canvas></div>
+      </div>
+      <div class="card">
+        <h3>Completion Trend</h3>
+        <div class="chart-wrap-lg"><canvas id="progLine" role="img" aria-label="Completion trend">Trend</canvas></div>
+      </div>
+    </div>
+    <div class="grid3">
+      <div class="card">
+        <h3>Water (7 days)</h3>
+        <div class="chart-wrap"><canvas id="progWater" role="img" aria-label="Water chart">Water</canvas></div>
+      </div>
+      <div class="card">
+        <h3>Exercise (7 days)</h3>
+        <div class="chart-wrap"><canvas id="progEx" role="img" aria-label="Exercise chart">Exercise</canvas></div>
+      </div>
+      <div class="card">
+        <h3>Mood (7 days)</h3>
+        <div class="chart-wrap"><canvas id="progMood" role="img" aria-label="Mood chart">Mood</canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Storage</h3>
+      <div style="font-size:13px;color:var(--text2)">localStorage used: <span id="storage-usage" style="color:var(--accent);font-weight:600">—</span> (5 MB limit)</div>
+    </div>
+  </div>
+
+  <!-- =================== SETTINGS =================== -->
+  <div class="page" id="page-settings">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>⚙ Settings</h2>
+        <p>Manage data, import/export backups, and configure preferences</p>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Data Management</h3>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">All your data is stored locally in your browser. Export regularly to keep a backup.</p>
+        <div class="data-actions" style="margin-bottom:12px">
+          <button class="btn" onclick="exportData()">⬇ Export JSON Backup</button>
+          <label class="btn btn-ghost" style="cursor:pointer">
+            ⬆ Import Backup
+            <input type="file" accept=".json" style="display:none" onchange="importData(this.files[0])"/>
+          </label>
+        </div>
+        <div class="card" style="background:var(--bg3)">
+          <div style="font-size:12px;color:var(--text2)">
+            Storage used: <strong id="settings-storage">—</strong><br/>
+            Tasks: <strong id="settings-tasks-count">—</strong> tasks total<br/>
+            Days tracked: <strong id="settings-days">—</strong>
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+          <p style="font-size:11px;color:var(--text3);margin-top:6px">This permanently deletes everything. Export first!</p>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Preferences</h3>
+        <div class="form-group">
+          <label>Theme</label>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="setTheme('dark')">🌙 Dark</button>
+            <button class="btn btn-ghost btn-sm" onclick="setTheme('light')">☀️ Light</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Default Water Goal</label>
+          <input type="number" class="inp" id="settings-water-goal" min="1" max="20" placeholder="8" style="width:80px" onchange="updateWaterGoalSettings(this.value)"/>
+          <span style="font-size:12px;color:var(--text3);margin-left:6px">glasses/day</span>
+        </div>
+        <div class="form-group">
+          <label>Default Exercise Goal</label>
+          <input type="number" class="inp" id="settings-ex-goal" min="5" max="300" placeholder="30" style="width:80px" onchange="updateExGoalSettings(this.value)"/>
+          <span style="font-size:12px;color:var(--text3);margin-left:6px">minutes/day</span>
+        </div>
+        <div class="form-group">
+          <label>Sound Alerts (Pomodoro)</label>
+          <button class="btn btn-ghost btn-sm" id="settings-notif-btn" onclick="toggleNotifications()">🔕 Off</button>
+        </div>
+        <h3 style="margin-top:8px">About</h3>
+        <p style="font-size:12px;color:var(--text3);line-height:1.6">Daily Tracker Dashboard v2.0<br/>All data stored locally in your browser.<br/>Export regularly to avoid data loss.</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container" aria-live="polite"></div>
+
+<!-- EDIT TASK MODAL -->
+<div class="modal-overlay" id="edit-task-modal" role="dialog" aria-label="Edit task">
+  <div class="modal">
+    <h3>Edit Task</h3>
+    <input type="hidden" id="edit-task-id"/>
+    <div class="form-group">
+      <label>Task Name</label>
+      <input class="inp inp-full" id="edit-task-name"/>
+    </div>
+    <div class="grid2">
+      <div class="form-group">
+        <label>Priority</label>
+        <select class="inp inp-full" id="edit-task-priority">
+          <option value="high">🔴 High</option>
+          <option value="medium">🟡 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select class="inp inp-full" id="edit-task-category">
+          <option value="study">📚 Study</option>
+          <option value="health">💪 Health</option>
+          <option value="personal">🏠 Personal</option>
+          <option value="coding">💻 Coding</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Due Date</label>
+      <input type="date" class="inp inp-full" id="edit-task-due"/>
+    </div>
+    <div class="form-group">
+      <label>Note</label>
+      <textarea class="inp inp-full" id="edit-task-note" rows="2" placeholder="Optional note..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('edit-task-modal')">Cancel</button>
+      <button class="btn" onclick="saveEditTask()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- GOAL MODAL -->
+<div class="modal-overlay" id="goal-modal" role="dialog" aria-label="Add goal">
+  <div class="modal">
+    <h3>Add New Goal</h3>
+    <div class="form-group">
+      <label>Goal Title</label>
+      <input class="inp inp-full" id="goal-title-inp" placeholder="e.g. Read 5 books"/>
+    </div>
+    <div class="grid2">
+      <div class="form-group">
+        <label>Type</label>
+        <select class="inp inp-full" id="goal-type-inp">
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <input class="inp inp-full" id="goal-unit-inp" placeholder="books, km, sessions"/>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="form-group">
+        <label>Target</label>
+        <input type="number" class="inp inp-full" id="goal-target-inp" placeholder="e.g. 5" min="1"/>
+      </div>
+      <div class="form-group">
+        <label>Current Progress</label>
+        <input type="number" class="inp inp-full" id="goal-progress-inp" placeholder="e.g. 2" min="0"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('goal-modal')">Cancel</button>
+      <button class="btn" onclick="saveGoal()">Save Goal</button>
+    </div>
+  </div>
+</div>
+
+<script src="state.js"></script>
+<script src="features.js"></script>
+<script>
+// ============================================================
+// APP INIT
+// ============================================================
+function init() {
+  const now = new Date();
+  const h = now.getHours();
+  const greet = h < 12 ? 'Good Morning! 👋' : h < 18 ? 'Good Afternoon! ☀️' : 'Good Evening! 🌙';
+  document.getElementById('greeting').textContent = greet;
+  document.getElementById('overview-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('sidebar-date').textContent = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Apply saved theme
+  if (state.theme === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('theme-toggle-btn').textContent = '🌙';
+  }
+
+  // Set filter-date default to today
+  const filterDate = document.getElementById('filter-date');
+  if (filterDate) filterDate.value = getToday();
+
+  // Init slider values from state
+  document.getElementById('water-goal-slider').value = state.waterGoal || 8;
+  document.getElementById('ex-goal-slider').value = state.exerciseGoal || 30;
+  document.getElementById('work-dur').value = state.pomoDurations.work || 25;
+  document.getElementById('short-dur').value = state.pomoDurations.short || 5;
+  document.getElementById('long-dur').value = state.pomoDurations.long || 15;
+  document.getElementById('work-dur-val').textContent = (state.pomoDurations.work || 25) + ' min';
+  document.getElementById('short-dur-val').textContent = (state.pomoDurations.short || 5) + ' min';
+  document.getElementById('long-dur-val').textContent = (state.pomoDurations.long || 15) + ' min';
+  document.getElementById('settings-water-goal').value = state.waterGoal || 8;
+  document.getElementById('settings-ex-goal').value = state.exerciseGoal || 30;
+
+  const notifBtn = document.getElementById('notif-btn');
+  const sNotifBtn = document.getElementById('settings-notif-btn');
+  if (notifBtn) notifBtn.textContent = state.notifications ? '🔔 On' : '🔕 Off';
+  if (sNotifBtn) sNotifBtn.textContent = state.notifications ? '🔔 On' : '🔕 Off';
+
+  pomoSecondsLeft = (state.pomoDurations.work || 25) * 60;
+  updatePomoDisplay();
+  updatePomoStats();
+  checkAndUpdateStreak();
+  updateOverviewStats();
+
+  // Settings stats
+  updateSettingsStats();
+
+  // Longest streak display
+  const ls = document.getElementById('ov-longest-streak');
+  if (ls) ls.textContent = state.longestStreak || 0;
+
+  // Add sample tasks on first load
+  if (!localStorage.getItem('dailyTrackerV2_visited')) {
+    localStorage.setItem('dailyTrackerV2_visited', '1');
+    addSampleData();
+  }
+}
+
+function updateSettingsStats() {
+  const ssEl = document.getElementById('settings-storage');
+  const stEl = document.getElementById('settings-tasks-count');
+  const sdEl = document.getElementById('settings-days');
+  if (ssEl) ssEl.textContent = getStorageSize() + ' KB';
+  if (stEl) stEl.textContent = state.tasks.length;
+  if (sdEl) {
+    const trackedDays = new Set([
+      ...Object.keys(state.water || {}),
+      ...Object.keys(state.exercise || {}),
+      ...Object.keys(state.mood || {}),
+    ]);
+    sdEl.textContent = trackedDays.size;
+  }
+}
+
+function setTheme(t) {
+  if (t === 'light') { document.body.classList.add('light'); document.getElementById('theme-toggle-btn').textContent = '🌙'; }
+  else { document.body.classList.remove('light'); document.getElementById('theme-toggle-btn').textContent = '☀️'; }
+  state.theme = t;
+  saveState();
+}
+
+function updateWaterGoalSettings(v) { updateWaterGoal(v); document.getElementById('water-goal-slider').value = v; }
+function updateExGoalSettings(v) { updateExGoal(v); document.getElementById('ex-goal-slider').value = v; }
+
+// ============================================================
+// NAV
+// ============================================================
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+
+  const pageRenders = {
+    overview: updateOverviewStats,
+    tasks: renderTasks,
+    water: renderWater,
+    exercise: renderExercise,
+    mood: renderMood,
+    goals: renderGoals,
+    calendar: renderCalendar,
+    progress: renderProgress,
+    settings: updateSettingsStats,
+  };
+  if (pageRenders[id]) pageRenders[id]();
+  closeSidebar();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay-mask').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay-mask').classList.remove('open');
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// Keyboard nav
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+});
+
+// ============================================================
+// SAMPLE DATA
+// ============================================================
+function addSampleData() {
+  const today = getToday();
+  state.tasks = [
+    { id: 's1', name: 'Morning exercise', priority: 'high', category: 'health', done: false, date: today, recurring: false, dueDate: null, note: '', createdAt: new Date().toISOString() },
+    { id: 's2', name: 'Read 20 pages', priority: 'medium', category: 'study', done: false, date: today, recurring: true, recurringDays: 'daily', dueDate: null, note: 'Focus on current book', createdAt: new Date().toISOString() },
+    { id: 's3', name: 'Code for 2 hours', priority: 'high', category: 'coding', done: false, date: today, recurring: false, dueDate: null, note: '', createdAt: new Date().toISOString() },
+    { id: 's4', name: 'Meditate 10 minutes', priority: 'low', category: 'personal', done: false, date: today, recurring: true, recurringDays: 'daily', dueDate: null, note: '', createdAt: new Date().toISOString() },
+    { id: 's5', name: 'Review weekly goals', priority: 'medium', category: 'personal', done: false, date: today, recurring: true, recurringDays: 'weekends', dueDate: null, note: '', createdAt: new Date().toISOString() },
+  ];
+  saveState();
+  renderTasks();
+}
+
+// ============================================================
+// START — load from server (checks auth), then init
+// ============================================================
+loadStateFromServer().then(() => {
+  init();
+}).catch(() => {
+  init(); // fallback to local data if server unreachable
+});
+</script>
+</body>
+</html>
